@@ -4,6 +4,8 @@ import (
 	"encoding/hex"
 	"strconv"
 	"strings"
+
+	"github.com/pkg/errors"
 )
 
 const encodingChunkSize = 2
@@ -28,18 +30,24 @@ func Encode(str string) string {
 	return encoded.String()
 }
 
-func Decode(encoded string) string {
+func Decode(encoded string) (string, error) {
 	decodedBytes := []byte{}
 	for i := 0; i < len(encoded); i += decodingChunkSize {
 		chunk := encoded[i:minOf(i+decodingChunkSize, len(encoded))]
-		val, _ := fromBase62(chunk)
+		val, err := fromBase62(chunk)
+		if err != nil {
+			return "", err
+		}
 		chunkHex := strconv.FormatUint(val, 16)
 		dst := make([]byte, hex.DecodedLen(len([]byte(chunkHex))))
-		_, _ = hex.Decode(dst, []byte(chunkHex))
+		_, err = hex.Decode(dst, []byte(chunkHex))
+		if err != nil {
+			return "", errors.Wrap(err, "malformed input")
+		}
 		decodedBytes = append(decodedBytes, dst...)
 	}
 	s := string(decodedBytes)
-	return s
+	return s, nil
 }
 
 func minOf(a int, b int) int {

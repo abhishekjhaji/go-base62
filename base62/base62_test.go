@@ -40,20 +40,61 @@ func Test_EncodeDeocde(t *testing.T) {
 		},
 		{
 			name: "nihongo non ascii",
-			args:args{
-				src:"日本語",
+			args: args{
+				src: "日本語",
 			},
 		},
 		{
 			name: "ascii mixed with non ascii ",
-			args:args{
-				src:"ab日本語-123de",
+			args: args{
+				src: "ab日本語-123de",
 			},
+		},
+	}
+	for _, test := range tests {
+		tt := test
+		t.Run(tt.name, func(t *testing.T) {
+			original, err := Decode(Encode(tt.args.src))
+
+			assert.Nil(t, err)
+			assert.Equal(t, tt.args.src, original)
+		})
+	}
+}
+
+func TestDecode_Error(t *testing.T) {
+	type args struct {
+		encoded string
+	}
+	tests := []struct {
+		name    string
+		args    args
+		wantErr string
+	}{
+		{
+			name: "non alphanumeric throws error",
+			args:args{
+				encoded: "7uU-efg",
+
+			},
+			wantErr: "invalid character: -",
+		},
+		{
+			name: "malformed input throws error",
+			args:args{
+				encoded: "abc-",
+
+			},
+			wantErr: "malformed input: encoding/hex: odd length hex string",
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			assert.Equal(t, tt.args.src, Decode(Encode(tt.args.src)))
+			got, err := Decode(tt.args.encoded)
+
+			assert.NotNil(t, err)
+			assert.Empty(t, got)
+			assert.Equal(t, tt.wantErr, err.Error())
 		})
 	}
 }
